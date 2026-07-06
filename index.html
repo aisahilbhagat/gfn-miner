@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hardware Capability Dashboard</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            850: '#1f2937',
+                            900: '#111827',
+                            950: '#030712',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom scrollbar for a sleek look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563; 
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-gray-800 pb-6">
+            <div>
+                <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-indigo-500">
+                    Hardware Capabilities
+                </h1>
+                <p class="text-gray-400 mt-2">Client-side detection • No data is collected or transmitted.</p>
+            </div>
+            <div class="mt-4 md:mt-0 flex items-center bg-gray-800/50 rounded-full px-4 py-2 border border-gray-700">
+                <span class="relative flex h-3 w-3 mr-3">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+                </span>
+                <span class="text-sm font-medium text-gray-300">Local Execution Only</span>
+            </div>
+        </header>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="py-12 text-center text-gray-400">
+            <svg class="animate-spin h-8 w-8 mx-auto mb-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p>Analyzing system hardware...</p>
+        </div>
+
+        <!-- Dashboard Grid (Hidden initially) -->
+        <div id="dashboard" class="hidden grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 fade-in">
+            
+            <!-- System & Browser Card -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg">
+                <div class="flex items-center mb-4">
+                    <svg class="w-6 h-6 text-blue-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                    <h2 class="text-xl font-semibold">System & Browser</h2>
+                </div>
+                <div class="space-y-4 text-sm">
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Operating System</span>
+                        <span id="os-val" class="font-medium text-right text-gray-200"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Browser</span>
+                        <span id="browser-val" class="font-medium text-right text-gray-200"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Platform</span>
+                        <span id="platform-val" class="font-medium text-right text-gray-200"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CPU Card -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg">
+                <div class="flex items-center mb-4">
+                    <svg class="w-6 h-6 text-indigo-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 3v2m6-2v2M9 19v2m6-2v2M5 9H3m2 6H3m18-6h-2m2 6h-2M7 19h10a2 2 0 002-2V7a2 2 0 00-2-2H7a2 2 0 00-2 2v10a2 2 0 002 2zM9 9h6v6H9V9z"></path></svg>
+                    <h2 class="text-xl font-semibold">Processor (CPU)</h2>
+                </div>
+                <div class="space-y-4 text-sm">
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Logical Cores</span>
+                        <span id="cpu-cores" class="font-medium text-right text-gray-200"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Device Memory</span>
+                        <span id="cpu-mem" class="font-medium text-right text-gray-200 flex items-center"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Architecture</span>
+                        <span id="cpu-arch" class="font-medium text-right text-gray-200"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WebGL / Graphics Card -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg">
+                <div class="flex items-center mb-4">
+                    <svg class="w-6 h-6 text-purple-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"></path></svg>
+                    <h2 class="text-xl font-semibold">Graphics (WebGL)</h2>
+                </div>
+                <div class="space-y-4 text-sm">
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">WebGL Support</span>
+                        <span id="webgl-support" class="font-medium text-right"></span>
+                    </div>
+                    <div class="flex flex-col border-b border-gray-800 pb-2 gap-1">
+                        <span class="text-gray-400">Vendor</span>
+                        <span id="webgl-vendor" class="font-medium text-gray-200 break-words"></span>
+                    </div>
+                    <div class="flex flex-col border-b border-gray-800 pb-2 gap-1">
+                        <span class="text-gray-400">Renderer</span>
+                        <span id="webgl-renderer" class="font-medium text-gray-200 break-words"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Hardware Accelerated</span>
+                        <span id="hw-accel" class="font-medium text-right"></span>
+                    </div>
+                    <div class="flex justify-between border-b border-gray-800 pb-2">
+                        <span class="text-gray-400">Max Texture Size</span>
+                        <span id="webgl-texture" class="font-medium text-right text-gray-200"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WebGPU Card (Takes up wider space) -->
+            <div class="bg-gray-900 border border-gray-800 rounded-xl p-6 shadow-lg md:col-span-2 lg:col-span-3">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center">
+                        <svg class="w-6 h-6 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5"></path></svg>
+                        <h2 class="text-xl font-semibold">Next-Gen Graphics (WebGPU)</h2>
+                    </div>
+                    <span id="webgpu-status" class="px-3 py-1 rounded-full text-xs font-bold bg-gray-800 text-gray-400">Checking...</span>
+                </div>
+                
+                <div id="webgpu-details" class="hidden text-sm space-y-6">
+                    <!-- Basic WebGPU Info -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-850 p-4 rounded-lg border border-gray-800">
+                            <span class="block text-gray-400 mb-1">Architecture</span>
+                            <span id="wg-arch" class="font-medium text-gray-200"></span>
+                        </div>
+                        <div class="bg-gray-850 p-4 rounded-lg border border-gray-800">
+                            <span class="block text-gray-400 mb-1">Vendor / Description</span>
+                            <span id="wg-vendor" class="font-medium text-gray-200"></span>
+                        </div>
+                        <div class="bg-gray-850 p-4 rounded-lg border border-gray-800">
+                            <span class="block text-gray-400 mb-1">Adapter Type</span>
+                            <span id="wg-adapter-type" class="font-medium text-gray-200"></span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Features -->
+                        <div>
+                            <h3 class="text-gray-400 mb-3 uppercase text-xs tracking-wider font-semibold">Supported Features</h3>
+                            <div id="wg-features" class="flex flex-wrap gap-2 max-h-48 overflow-y-auto pr-2 pb-2">
+                                <!-- Features populated via JS -->
+                            </div>
+                        </div>
+                        
+                        <!-- Limits -->
+                        <div>
+                            <h3 class="text-gray-400 mb-3 uppercase text-xs tracking-wider font-semibold">Device Limits</h3>
+                            <div class="bg-gray-850 rounded-lg border border-gray-800 max-h-48 overflow-y-auto">
+                                <table class="w-full text-left">
+                                    <tbody id="wg-limits" class="divide-y divide-gray-800">
+                                        <!-- Limits populated via JS -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="webgpu-unsupported" class="hidden py-8 text-center text-gray-500 border border-dashed border-gray-700 rounded-lg">
+                    <p class="mb-2">WebGPU is not supported or enabled in this browser.</p>
+                    <p class="text-xs">Try Chrome/Edge (v113+) or enable experimental flags in Safari/Firefox.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const ui = {
+                loading: document.getElementById('loading'),
+                dashboard: document.getElementById('dashboard'),
+                os: document.getElementById('os-val'),
+                browser: document.getElementById('browser-val'),
+                platform: document.getElementById('platform-val'),
+                cpuCores: document.getElementById('cpu-cores'),
+                cpuMem: document.getElementById('cpu-mem'),
+                cpuArch: document.getElementById('cpu-arch'),
+                webglSupport: document.getElementById('webgl-support'),
+                webglVendor: document.getElementById('webgl-vendor'),
+                webglRenderer: document.getElementById('webgl-renderer'),
+                hwAccel: document.getElementById('hw-accel'),
+                webglTexture: document.getElementById('webgl-texture'),
+                wgStatus: document.getElementById('webgpu-status'),
+                wgDetails: document.getElementById('webgpu-details'),
+                wgUnsupported: document.getElementById('webgpu-unsupported'),
+                wgArch: document.getElementById('wg-arch'),
+                wgVendor: document.getElementById('wg-vendor'),
+                wgAdapterType: document.getElementById('wg-adapter-type'),
+                wgFeatures: document.getElementById('wg-features'),
+                wgLimits: document.getElementById('wg-limits'),
+            };
+
+            // Badge helper for unavailable info (Privacy)
+            const privacyBadge = '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-900/50 text-yellow-500 border border-yellow-700/50" title="Restricted by browser privacy settings">Protected</span>';
+
+            // 1. Detect OS & Browser
+            const ua = navigator.userAgent;
+            
+            function detectOS() {
+                if (/windows nt 10/i.test(ua)) return "Windows 10/11";
+                if (/windows nt 6\.[2-3]/i.test(ua)) return "Windows 8/8.1";
+                if (/windows nt 6\.1/i.test(ua)) return "Windows 7";
+                if (/mac os x/i.test(ua)) return "macOS";
+                if (/cros/i.test(ua)) return "ChromeOS";
+                if (/android/i.test(ua)) return "Android";
+                if (/iphone|ipad|ipod/i.test(ua)) return "iOS";
+                if (/linux/i.test(ua)) return "Linux";
+                return "Unknown OS";
+            }
+
+            function detectBrowser() {
+                if (/edg/i.test(ua)) return "Microsoft Edge";
+                if (/opr|opera/i.test(ua)) return "Opera";
+                if (/chrome|crios/i.test(ua)) return "Google Chrome";
+                if (/firefox|fxios/i.test(ua)) return "Mozilla Firefox";
+                if (/safari/i.test(ua)) return "Apple Safari";
+                return "Unknown Browser";
+            }
+
+            ui.os.textContent = detectOS();
+            ui.browser.textContent = detectBrowser();
+            ui.platform.textContent = navigator.platform || "Unknown";
+
+            // 2. Detect CPU
+            ui.cpuCores.innerHTML = navigator.hardwareConcurrency 
+                ? `${navigator.hardwareConcurrency} Logical Cores` 
+                : privacyBadge;
+
+            ui.cpuMem.innerHTML = navigator.deviceMemory 
+                ? `~${navigator.deviceMemory} GB+` 
+                : privacyBadge;
+
+            // Attempt to get Architecture via modern API, fallback to basic heuristic
+            if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+                try {
+                    const data = await navigator.userAgentData.getHighEntropyValues(['architecture', 'bitness']);
+                    ui.cpuArch.textContent = `${data.architecture || 'Unknown'} (${data.bitness ? data.bitness + '-bit' : 'Unknown'})`;
+                } catch (e) {
+                    ui.cpuArch.innerHTML = privacyBadge;
+                }
+            } else {
+                const is64 = /x86_64|x86-64|Win64|x64|amd64|arm64/i.test(ua) ? "64-bit" : (/i386|i686|arm/i.test(ua) ? "32-bit" : "Unknown Bitness");
+                const arch = /arm/i.test(ua) ? "ARM" : "x86";
+                ui.cpuArch.textContent = `${arch} (${is64})`;
+            }
+
+            // 3. Detect WebGL & GPU
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            
+            if (gl) {
+                ui.webglSupport.innerHTML = '<span class="text-green-400">Supported</span>';
+                const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+                
+                if (debugInfo) {
+                    const vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+                    const renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+                    
+                    ui.webglVendor.textContent = vendor || 'Unknown';
+                    ui.webglRenderer.textContent = renderer || 'Unknown';
+
+                    // Hardware Acceleration Heuristic
+                    const softwareRenderers = ['swiftshader', 'llvmpipe', 'software', 'mali-400', 'basic render'];
+                    const isSoftware = softwareRenderers.some(sw => renderer.toLowerCase().includes(sw));
+                    
+                    if (isSoftware) {
+                        ui.hwAccel.innerHTML = '<span class="text-red-400 font-bold">No (Software Rendering)</span>';
+                    } else {
+                        ui.hwAccel.innerHTML = '<span class="text-green-400">Yes</span>';
+                    }
+                } else {
+                    ui.webglVendor.innerHTML = privacyBadge;
+                    ui.webglRenderer.innerHTML = privacyBadge;
+                    ui.hwAccel.innerHTML = privacyBadge;
+                }
+                
+                ui.webglTexture.textContent = gl.getParameter(gl.MAX_TEXTURE_SIZE) + ' px';
+            } else {
+                ui.webglSupport.innerHTML = '<span class="text-red-400">Not Supported</span>';
+                ui.webglVendor.textContent = 'N/A';
+                ui.webglRenderer.textContent = 'N/A';
+                ui.hwAccel.textContent = 'N/A';
+                ui.webglTexture.textContent = 'N/A';
+            }
+
+            // 4. Detect WebGPU (Async)
+            async function detectWebGPU() {
+                if (!("gpu" in navigator)) {
+                    showWebGPUNotSupported();
+                    return;
+                }
+
+                try {
+                    const adapter = await navigator.gpu.requestAdapter();
+                    if (!adapter) {
+                        showWebGPUNotSupported();
+                        return;
+                    }
+
+                    // Extract Info (Handling differences in browser specs)
+                    let info = {};
+                    if (adapter.info) {
+                        info = adapter.info; // Modern spec
+                    } else if (typeof adapter.requestAdapterInfo === 'function') {
+                        info = await adapter.requestAdapterInfo(); // Older spec
+                    }
+
+                    ui.wgStatus.innerHTML = '<span class="text-green-400">Supported & Active</span>';
+                    ui.wgStatus.className = "px-3 py-1 rounded-full text-xs font-bold bg-green-900/30 border border-green-800";
+                    ui.wgDetails.classList.remove('hidden');
+
+                    // Set adapter details
+                    const archString = info.architecture || 'Protected / Unknown';
+                    ui.wgArch.innerHTML = info.architecture ? archString : privacyBadge;
+                    
+                    const vendorString = info.description || info.vendor || 'Protected / Unknown';
+                    ui.wgVendor.innerHTML = (info.description || info.vendor) ? vendorString : privacyBadge;
+                    
+                    // The isFallbackAdapter flag indicates if it's a software/fallback adapter
+                    ui.wgAdapterType.textContent = adapter.isFallbackAdapter ? "Software Fallback" : "Hardware Accelerated";
+                    ui.wgAdapterType.className = adapter.isFallbackAdapter ? "font-medium text-red-400" : "font-medium text-green-400";
+
+                    // Populate Features
+                    ui.wgFeatures.innerHTML = '';
+                    if (adapter.features && adapter.features.size > 0) {
+                        adapter.features.forEach(feature => {
+                            const badge = document.createElement('span');
+                            badge.className = "px-2 py-1 bg-gray-800 border border-gray-700 rounded text-xs text-gray-300";
+                            badge.textContent = feature;
+                            ui.wgFeatures.appendChild(badge);
+                        });
+                    } else {
+                        ui.wgFeatures.innerHTML = '<span class="text-gray-500 text-sm">No specific extended features exposed.</span>';
+                    }
+
+                    // Populate Limits
+                    ui.wgLimits.innerHTML = '';
+                    for (const key in adapter.limits) {
+                        const tr = document.createElement('tr');
+                        tr.className = "hover:bg-gray-800/50 transition-colors";
+                        tr.innerHTML = `
+                            <td class="py-2 px-3 text-xs text-gray-400 font-mono">${key}</td>
+                            <td class="py-2 px-3 text-xs text-gray-200 text-right">${adapter.limits[key].toLocaleString()}</td>
+                        `;
+                        ui.wgLimits.appendChild(tr);
+                    }
+
+                } catch (err) {
+                    console.error("WebGPU detection error:", err);
+                    showWebGPUNotSupported();
+                }
+            }
+
+            function showWebGPUNotSupported() {
+                ui.wgStatus.innerHTML = '<span class="text-red-400">Not Supported</span>';
+                ui.wgStatus.className = "px-3 py-1 rounded-full text-xs font-bold bg-red-900/30 border border-red-800";
+                ui.wgDetails.classList.add('hidden');
+                ui.wgUnsupported.classList.remove('hidden');
+            }
+
+            // Execute WebGPU detection and show dashboard
+            await detectWebGPU();
+
+            // Simulate slight delay for "analysis" effect, then reveal UI
+            setTimeout(() => {
+                ui.loading.classList.add('hidden');
+                ui.dashboard.classList.remove('hidden');
+            }, 600);
+        });
+    </script>
+</body>
+</html>
