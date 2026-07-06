@@ -6,20 +6,10 @@
     <title>WebGPU Professional Compute Benchmark</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    colors: { gray: { 850: '#1f2937', 900: '#111827', 950: '#030712' } },
-                    fontFamily: { mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'] }
-                }
-            }
-        }
+        tailwind.config = { darkMode: 'class', theme: { extend: { colors: { gray: { 850: '#1f2937', 900: '#111827', 950: '#030712' } }, fontFamily: { mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'] } } } }
     </script>
     <style>
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #111827; }
-        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-track { background: #111827; } ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
         .glass-panel { background: rgba(17, 24, 39, 0.8); border: 1px solid rgba(55, 65, 81, 0.7); }
     </style>
 </head>
@@ -28,11 +18,9 @@
     <header class="border-b border-gray-800 bg-gray-900/80 p-3 sticky top-0 z-10 flex justify-between items-center">
         <div>
             <h1 class="text-xl font-bold text-blue-400">WebGPU ProBench</h1>
-            <p class="text-xs text-gray-400 font-mono">Engine Version: 3.0.0 | High-Accuracy Validation Suite</p>
+            <p class="text-xs text-gray-400 font-mono">Engine Version: 4.0.0 | Adaptive Scaling & Validation Suite</p>
         </div>
-        <div id="global-status" class="px-3 py-1 rounded text-xs font-bold font-mono bg-yellow-900/50 text-yellow-500 border border-yellow-800">
-            SYS_INIT
-        </div>
+        <div id="global-status" class="px-3 py-1 rounded text-xs font-bold font-mono bg-yellow-900/50 text-yellow-500 border border-yellow-800">SYS_INIT</div>
     </header>
 
     <main class="flex-grow p-4 max-w-[1400px] mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-4">
@@ -61,11 +49,13 @@
                                 <option value="int-bitwise">Integer ALU & Bitwise</option>
                                 <option value="float-math">Float Trig & Log</option>
                             </optgroup>
-                            <optgroup label="Memory & Bandwidth">
+                            <optgroup label="Memory & Synchronization">
                                 <option value="mem-seq">Sequential Copy (VRAM BW)</option>
+                                <option value="parallel-reduce">Parallel Reduction (Shared Mem)</option>
                             </optgroup>
-                            <optgroup label="Scientific & Algorithmic">
-                                <option value="matmul">Matrix Multiply</option>
+                            <optgroup label="Scientific & Simulation">
+                                <option value="matmul">Matrix Multiply (O(N^3))</option>
+                                <option value="n-body">N-Body Gravity Sim (O(N^2))</option>
                             </optgroup>
                             <optgroup label="Cryptographic">
                                 <option value="crypto-chacha">ChaCha20 Cipher (Crypto ALU)</option>
@@ -75,15 +65,16 @@
                     <div>
                         <label class="block text-gray-500 mb-1">Benchmark Profile</label>
                         <select id="ctrl-mode" class="w-full bg-gray-900 border border-gray-700 rounded p-2 text-gray-200 outline-none">
-                            <option value="time-10s">10s Standard Measure</option>
-                            <option value="time-30s">30s Deep Measure</option>
-                            <option value="time-60s">60s Thermal Throttling Test</option>
+                            <option value="scale-only">Adaptive Scale Sweep Only</option>
+                            <option value="time-10s">10s Measure (Auto-Scale)</option>
+                            <option value="time-30s">30s Deep Measure (Auto-Scale)</option>
+                            <option value="time-60s">60s Sustained (Auto-Scale)</option>
                         </select>
                     </div>
                     
                     <div class="bg-gray-900/50 p-2 rounded border border-gray-800 text-gray-400">
-                        <span class="text-blue-400 font-bold block mb-1">Strict Validation Mode</span>
-                        Requires 100% CPU/GPU alignment before execution. Scales dynamically to find optimal throughput.
+                        <span class="text-blue-400 font-bold block mb-1">Validation & Auto-Scale</span>
+                        Engine will enforce CPU correctness, then sweep [64..Max] to find peak hardware saturation before measuring.
                     </div>
 
                     <button id="btn-start" class="w-full bg-blue-700 hover:bg-blue-600 text-white py-2 rounded font-bold transition-all disabled:opacity-50 mt-auto">
@@ -99,7 +90,6 @@
         <!-- Right: Metrics & Reporting -->
         <div class="lg:col-span-9 flex flex-col gap-4">
             
-            <!-- Realtime Telemetry & New Validation / CPU comparison Data -->
             <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div class="glass-panel p-3 rounded">
                     <div class="text-xs text-gray-500 font-mono">GPU Performance (Optimal)</div>
@@ -119,18 +109,17 @@
                 </div>
             </div>
 
-            <!-- Deep Execution Analysis -->
             <div class="glass-panel rounded p-4">
                 <h2 class="text-gray-400 font-bold mb-3 border-b border-gray-800 pb-1 font-mono text-xs flex justify-between">
                     <span>PIPELINE_TIMING_ANALYSIS</span>
                     <span id="stat-phase" class="text-blue-400">IDLE</span>
                 </h2>
                 <div class="grid grid-cols-2 md:grid-cols-5 gap-3 font-mono text-xs">
-                    <div class="bg-gray-900 rounded p-2 border border-gray-800"><div class="text-gray-500">Shader Compile</div><div id="tk-compile" class="text-gray-300">0.00 ms</div></div>
-                    <div class="bg-gray-900 rounded p-2 border border-gray-800"><div class="text-gray-500">Pipeline Build</div><div id="tk-build" class="text-gray-300">0.00 ms</div></div>
+                    <div class="bg-gray-900 rounded p-2 border border-gray-800"><div class="text-gray-500">Active Workload Size</div><div id="tk-size" class="text-yellow-300">0 Elements</div></div>
                     <div class="bg-gray-900 rounded p-2 border border-gray-800"><div class="text-gray-500">CPU Dispatch Overhead</div><div id="tk-cpu" class="text-yellow-400">0.00 ms</div></div>
                     <div class="bg-gray-900 rounded p-2 border border-gray-800"><div class="text-gray-500">GPU Exec Latency</div><div id="tk-gpu" class="text-cyan-400 font-bold">0.00 ms</div></div>
                     <div class="bg-gray-900 rounded p-2 border border-gray-800"><div class="text-gray-500">Samples (Warm/Meas)</div><div id="tk-samples" class="text-gray-300">0 / 0</div></div>
+                    <div class="bg-gray-900 rounded p-2 border border-gray-800"><div class="text-gray-500">Peak GPU Saturation</div><div id="tk-saturation" class="text-purple-400">0.0%</div></div>
                 </div>
             </div>
 
@@ -145,7 +134,6 @@
                 </div>
                 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 overflow-y-auto">
-                    <!-- Validation -->
                     <div>
                         <h3 class="text-gray-500 mb-2 border-b border-gray-800">Correctness Validation</h3>
                         <table class="w-full text-left text-gray-300">
@@ -158,7 +146,6 @@
                             </tbody>
                         </table>
                     </div>
-                    <!-- Statistical Math -->
                     <div>
                         <h3 class="text-gray-500 mb-2 border-b border-gray-800">Statistical Variance (GPU)</h3>
                         <table class="w-full text-left text-gray-300">
@@ -173,16 +160,15 @@
                             </tbody>
                         </table>
                     </div>
-                    <!-- Workload Specs -->
                     <div>
                         <h3 class="text-gray-500 mb-2 border-b border-gray-800">Optimal Configuration</h3>
                         <table class="w-full text-left text-gray-300">
                             <tbody>
-                                <tr><td class="py-1 text-gray-500">Optimal Size</td><td id="rep-opt-size" class="text-right text-yellow-300"></td></tr>
+                                <tr><td class="py-1 text-gray-500">Optimal Scale</td><td id="rep-opt-size" class="text-right text-yellow-300"></td></tr>
                                 <tr><td class="py-1 text-gray-500">Total Ops/Run</td><td id="rep-ops" class="text-right"></td></tr>
                                 <tr><td class="py-1 text-gray-500">Total Bytes/Run</td><td id="rep-bytes" class="text-right"></td></tr>
                                 <tr><td class="py-1 text-gray-500">Arithmetic Intensity</td><td id="rep-intensity" class="text-right"></td></tr>
-                                <tr><td class="py-1 text-gray-500">GPU Occupancy</td><td id="rep-occupancy" class="text-right text-blue-400"></td></tr>
+                                <tr><td class="py-1 text-gray-500">Est. Hardware Occ.</td><td id="rep-occupancy" class="text-right text-blue-400"></td></tr>
                                 <tr><td class="py-1 text-gray-500">GPU Speedup vs CPU</td><td id="rep-speedup" class="text-right text-purple-400 font-bold"></td></tr>
                             </tbody>
                         </table>
@@ -194,29 +180,21 @@
         </div>
     </main>
 
-    <!-- Professional Compute Engine Core -->
     <script>
         /**
          * MODULE 1: Statistical Engine & Data Analysis
-         * Rigorous data collection, IQR outlier rejection, CI calculations
          */
         class StatisticsEngine {
             constructor() { this.reset(); }
             reset() {
-                this.warmupTimes = [];
-                this.measuredTimes = [];
-                this.cpuOverheadTimes = [];
+                this.warmupTimes = []; this.measuredTimes = []; this.cpuOverheadTimes = [];
             }
             record(isWarmup, gpuTime, cpuTime) {
                 if (isWarmup) this.warmupTimes.push(gpuTime);
-                else {
-                    this.measuredTimes.push(gpuTime);
-                    this.cpuOverheadTimes.push(cpuTime);
-                }
+                else { this.measuredTimes.push(gpuTime); this.cpuOverheadTimes.push(cpuTime); }
             }
             analyze() {
                 if (this.measuredTimes.length === 0) return null;
-
                 const sorted = [...this.measuredTimes].sort((a, b) => a - b);
                 const q1 = sorted[Math.floor(sorted.length * 0.25)];
                 const q3 = sorted[Math.floor(sorted.length * 0.75)];
@@ -233,7 +211,7 @@
                 const avg = validTimes.reduce((a, b) => a + b, 0) / n;
                 const variance = validTimes.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / n;
                 const stdDev = Math.sqrt(variance);
-                const ci95 = 1.96 * (stdDev / Math.sqrt(n)); // 95% Confidence Interval
+                const ci95 = 1.96 * (stdDev / Math.sqrt(n));
 
                 const avgCpu = this.cpuOverheadTimes.reduce((a, b) => a + b, 0) / this.cpuOverheadTimes.length;
 
@@ -245,7 +223,7 @@
         }
 
         /**
-         * MODULE 2: Buffer Manager (VRAM allocation)
+         * MODULE 2: Buffer Manager
          */
         class BufferManager {
             static createStorage(device, dataOrSize) {
@@ -266,128 +244,77 @@
         }
 
         /**
-         * MODULE 3: Kernel Architectures
-         * WGSL implementations + mathematically identical CPU equivalents for correctness validation
+         * MODULE 3: Kernel Architectures (WGSL & CPU Equivalents)
          */
         class KernelRegistry {
             static getKernel(id) {
                 const kernels = {
                     'int-bitwise': {
-                        name: 'Integer ALU & Bitwise',
-                        type: 'iops',
-                        isFloat: false,
-                        epsilon: 0,
-                        workgroupSize: 256,
-                        opsPerInvocation: 12,
-                        bytesPerInvocation: 12,
-                        generateInputs: (count) => [
-                            new Uint32Array(count).map((_, i) => i),
-                            new Uint32Array(count).map((_, i) => i ^ 0xAAAA5555)
-                        ],
-                        createBuffers: (device, inputs, count) => [
-                            BufferManager.createStorage(device, inputs[0]),
-                            BufferManager.createStorage(device, inputs[1]),
-                            BufferManager.createStorage(device, count * 4)
-                        ],
+                        name: 'Integer ALU & Bitwise', type: 'iops', isFloat: false, epsilon: 0, workgroupSize: 256,
+                        opsPerInvocation: () => 12, bytesPerInvocation: () => 12,
+                        generateInputs: (count) => [new Uint32Array(count).map((_, i) => i), new Uint32Array(count).map((_, i) => i ^ 0xAAAA5555)],
+                        createBuffers: (device, inputs, count) => [BufferManager.createStorage(device, inputs[0]), BufferManager.createStorage(device, inputs[1]), BufferManager.createStorage(device, count * 4)],
                         cpuExecute: (inputs, count) => {
                             const A = inputs[0]; const B = inputs[1]; const Out = new Uint32Array(count);
                             for(let i=0; i<count; i++) {
                                 const a = A[i]; const b = B[i];
-                                let t1 = (a + b) >>> 0;
-                                let t2 = Math.imul(a, b) >>> 0;
-                                let t3 = (t1 ^ t2) >>> 0;
-                                let t4 = (t3 << 3) >>> 0;
-                                let t5 = (t4 | (b >>> 2)) >>> 0;
-                                let t6 = (t5 - (a % 17)) >>> 0;
-                                let t7 = (t6 & 0xFF00FF00) >>> 0;
-                                let t8 = (t7 ^ Math.trunc(a / 3)) >>> 0;
+                                let t1 = (a + b) >>> 0; let t2 = Math.imul(a, b) >>> 0; let t3 = (t1 ^ t2) >>> 0; let t4 = (t3 << 3) >>> 0;
+                                let t5 = (t4 | (b >>> 2)) >>> 0; let t6 = (t5 - (a % 17)) >>> 0; let t7 = (t6 & 0xFF00FF00) >>> 0; let t8 = (t7 ^ Math.trunc(a / 3)) >>> 0;
                                 Out[i] = (t8 + 1) >>> 0;
                             }
                             return Out;
                         },
                         code: (size) => `
-                            @group(0) @binding(0) var<storage, read> A: array<u32>;
-                            @group(0) @binding(1) var<storage, read> B: array<u32>;
-                            @group(0) @binding(2) var<storage, read_write> Out: array<u32>;
+                            @group(0) @binding(0) var<storage, read> A: array<u32>; @group(0) @binding(1) var<storage, read> B: array<u32>; @group(0) @binding(2) var<storage, read_write> Out: array<u32>;
                             @compute @workgroup_size(${size})
                             fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                                 let i = id.x;
                                 if (i < arrayLength(&Out)) {
                                     let a = A[i]; let b = B[i];
-                                    let t1 = a + b;           
-                                    let t2 = a * b;           
-                                    let t3 = t1 ^ t2;         
-                                    let t4 = t3 << 3u;        
-                                    let t5 = t4 | (b >> 2u);  
-                                    let t6 = t5 - (a % 17u);  
-                                    let t7 = t6 & 0xFF00FF00u;
-                                    let t8 = t7 ^ (a / 3u);   
+                                    let t1 = a + b; let t2 = a * b; let t3 = t1 ^ t2; let t4 = t3 << 3u;
+                                    let t5 = t4 | (b >> 2u); let t6 = t5 - (a % 17u); let t7 = t6 & 0xFF00FF00u; let t8 = t7 ^ (a / 3u);   
                                     Out[i] = t8 + 1u;         
                                 }
                             }
                         `
                     },
                     'float-math': {
-                        name: 'Floating Point Trig & Log',
-                        type: 'flops',
-                        isFloat: true,
-                        epsilon: 1e-4, // Account for f32 (GPU) vs f64 (CPU) slight variances
-                        workgroupSize: 256,
-                        opsPerInvocation: 10, 
-                        bytesPerInvocation: 8,
+                        name: 'Floating Point Trig & Log', type: 'flops', isFloat: true, epsilon: 1e-4, workgroupSize: 256,
+                        opsPerInvocation: () => 10, bytesPerInvocation: () => 8,
                         generateInputs: (count) => [ new Float32Array(count).map(() => Math.random() + 0.1) ],
-                        createBuffers: (device, inputs, count) => [
-                            BufferManager.createStorage(device, inputs[0]),
-                            BufferManager.createStorage(device, count * 4)
-                        ],
+                        createBuffers: (device, inputs, count) => [BufferManager.createStorage(device, inputs[0]), BufferManager.createStorage(device, count * 4)],
                         cpuExecute: (inputs, count) => {
                             const A = inputs[0]; const Out = new Float32Array(count);
                             for(let i=0; i<count; i++) {
                                 const v = A[i];
-                                let t1 = Math.fround(Math.sin(v));
-                                let t2 = Math.fround(Math.cos(v));
-                                let t3 = Math.fround(Math.tan(v));
-                                let t4 = Math.fround(Math.exp(v));
-                                let t5 = Math.fround(Math.log(v + 1.1));
+                                let t1 = Math.fround(Math.sin(v)); let t2 = Math.fround(Math.cos(v)); let t3 = Math.fround(Math.tan(v));
+                                let t4 = Math.fround(Math.exp(v)); let t5 = Math.fround(Math.log(v + 1.1));
                                 Out[i] = Math.fround(Math.fround(t1 * t2) + Math.fround(t3 / t4) - t5);
                             }
                             return Out;
                         },
                         code: (size) => `
-                            @group(0) @binding(0) var<storage, read> A: array<f32>;
-                            @group(0) @binding(1) var<storage, read_write> Out: array<f32>;
+                            @group(0) @binding(0) var<storage, read> A: array<f32>; @group(0) @binding(1) var<storage, read_write> Out: array<f32>;
                             @compute @workgroup_size(${size})
                             fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                                 let i = id.x;
                                 if (i < arrayLength(&Out)) {
                                     let v = A[i];
-                                    let t1 = sin(v); let t2 = cos(v); let t3 = tan(v);
-                                    let t4 = exp(v); let t5 = log(v + 1.1f);
+                                    let t1 = sin(v); let t2 = cos(v); let t3 = tan(v); let t4 = exp(v); let t5 = log(v + 1.1f);
                                     Out[i] = (t1 * t2) + (t3 / t4) - t5;
                                 }
                             }
                         `
                     },
                     'matmul': {
-                        name: 'Matrix Multiplication',
-                        type: 'flops',
-                        isFloat: true,
-                        epsilon: 1e-2, // larger epsilon due to accumulated precision errors over rows
-                        workgroupSize: 16,
-                        opsPerInvocation: (dim) => dim * 2, // depends on scale
-                        bytesPerInvocation: (dim) => (dim * 8) + 4,
-                        generateInputs: (dim) => [
-                            new Float32Array(dim*dim).map(() => Math.random()),
-                            new Float32Array(dim*dim).map(() => Math.random())
-                        ],
+                        name: 'Matrix Multiplication', type: 'flops', isFloat: true, epsilon: 1e-2, workgroupSize: 16,
+                        opsPerInvocation: (dim) => dim * 2, bytesPerInvocation: (dim) => (dim * 8) + 4,
+                        generateInputs: (dim) => [new Float32Array(dim*dim).map(() => Math.random()), new Float32Array(dim*dim).map(() => Math.random())],
                         createBuffers: (device, inputs, dim) => [
-                            BufferManager.createStorage(device, inputs[0]),
-                            BufferManager.createStorage(device, inputs[1]),
-                            BufferManager.createStorage(device, (dim*dim) * 4)
+                            BufferManager.createStorage(device, inputs[0]), BufferManager.createStorage(device, inputs[1]), BufferManager.createStorage(device, (dim*dim) * 4)
                         ],
                         cpuExecute: (inputs, dim) => {
-                            const A = inputs[0]; const B = inputs[1]; 
-                            const Out = new Float32Array(dim*dim);
+                            const A = inputs[0]; const B = inputs[1]; const Out = new Float32Array(dim*dim);
                             for (let row = 0; row < dim; row++) {
                                 for (let col = 0; col < dim; col++) {
                                     let sum = 0.0;
@@ -398,95 +325,158 @@
                             return Out;
                         },
                         code: (size) => `
-                            @group(0) @binding(0) var<storage, read> A: array<f32>;
-                            @group(0) @binding(1) var<storage, read> B: array<f32>;
-                            @group(0) @binding(2) var<storage, read_write> C: array<f32>;
-                            struct Dim { val: u32 };
-                            @group(0) @binding(3) var<uniform> dim: Dim;
+                            @group(0) @binding(0) var<storage, read> A: array<f32>; @group(0) @binding(1) var<storage, read> B: array<f32>; @group(0) @binding(2) var<storage, read_write> C: array<f32>;
+                            struct Dim { val: u32 }; @group(0) @binding(3) var<uniform> dim: Dim;
                             @compute @workgroup_size(${size}, ${size})
                             fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                                 let row = id.y; let col = id.x; let d = dim.val; 
                                 if (row < d && col < d) {
                                     var sum: f32 = 0.0;
-                                    for (var i: u32 = 0u; i < d; i = i + 1u) {
-                                        sum = sum + (A[row * d + i] * B[i * d + col]);
-                                    }
+                                    for (var i: u32 = 0u; i < d; i = i + 1u) { sum = sum + (A[row * d + i] * B[i * d + col]); }
                                     C[row * d + col] = sum;
                                 }
                             }
                         `
                     },
-                    'mem-seq': {
-                        name: 'Sequential Memory Copy',
-                        type: 'bandwidth',
-                        isFloat: false,
-                        epsilon: 0,
-                        workgroupSize: 256,
-                        opsPerInvocation: 1, 
-                        bytesPerInvocation: 32, // vec4 read + vec4 write
-                        generateInputs: (count) => [ new Uint32Array(count * 4).map(() => Math.floor(Math.random() * 100)) ],
-                        createBuffers: (device, inputs, count) => [
-                            BufferManager.createStorage(device, inputs[0]),
-                            BufferManager.createStorage(device, count * 16)
+                    'n-body': {
+                        name: 'N-Body Gravity Simulation', type: 'flops', isFloat: true, epsilon: 5e-2, workgroupSize: 256,
+                        opsPerInvocation: (n) => n * 20, // ~20 flops per interaction
+                        bytesPerInvocation: (n) => (n * 16) + 32, // Read all positions, read/write own pos/vel
+                        generateInputs: (n) => [
+                            new Float32Array(n*4).map(() => Math.random() * 10), // Pos + Mass
+                            new Float32Array(n*4).map(() => Math.random())       // Vel
                         ],
-                        cpuExecute: (inputs, count) => {
-                            const A = inputs[0]; const Out = new Uint32Array(count * 4);
-                            Out.set(A);
-                            return Out;
+                        createBuffers: (device, inputs, n) => [
+                            BufferManager.createStorage(device, inputs[0]), BufferManager.createStorage(device, inputs[1]),
+                            BufferManager.createStorage(device, n*4*4), BufferManager.createStorage(device, n*4*4)
+                        ],
+                        cpuExecute: (inputs, n) => {
+                            const posMass = inputs[0]; const vel = inputs[1];
+                            const newPos = new Float32Array(n*4); const newVel = new Float32Array(n*4);
+                            const dt = 0.016; const softening = 0.001;
+                            for (let i = 0; i < n; i++) {
+                                let px = posMass[i*4]; let py = posMass[i*4+1]; let pz = posMass[i*4+2]; let m = posMass[i*4+3];
+                                let vx = vel[i*4]; let vy = vel[i*4+1]; let vz = vel[i*4+2];
+                                let fx = 0, fy = 0, fz = 0;
+                                for (let j = 0; j < n; j++) {
+                                    let dx = posMass[j*4] - px; let dy = posMass[j*4+1] - py; let dz = posMass[j*4+2] - pz;
+                                    let distSq = dx*dx + dy*dy + dz*dz + softening;
+                                    let invDist = 1.0 / Math.sqrt(distSq);
+                                    let invDist3 = invDist * invDist * invDist;
+                                    let gravity = posMass[j*4+3] * invDist3;
+                                    fx += dx * gravity; fy += dy * gravity; fz += dz * gravity;
+                                }
+                                vx += fx * dt; vy += fy * dt; vz += fz * dt;
+                                px += vx * dt; py += vy * dt; pz += vz * dt;
+                                newPos[i*4]=px; newPos[i*4+1]=py; newPos[i*4+2]=pz; newPos[i*4+3]=m;
+                                newVel[i*4]=vx; newVel[i*4+1]=vy; newVel[i*4+2]=vz; newVel[i*4+3]=0;
+                            }
+                            return newPos; // Validate positions
                         },
                         code: (size) => `
-                            @group(0) @binding(0) var<storage, read> Src: array<vec4<u32>>;
-                            @group(0) @binding(1) var<storage, read_write> Dst: array<vec4<u32>>;
+                            @group(0) @binding(0) var<storage, read> posMassIn: array<vec4<f32>>; @group(0) @binding(1) var<storage, read> velIn: array<vec4<f32>>;
+                            @group(0) @binding(2) var<storage, read_write> posMassOut: array<vec4<f32>>; @group(0) @binding(3) var<storage, read_write> velOut: array<vec4<f32>>;
+                            struct Dim { val: u32 }; @group(0) @binding(4) var<uniform> dim: Dim;
                             @compute @workgroup_size(${size})
                             fn main(@builtin(global_invocation_id) id: vec3<u32>) {
-                                let i = id.x;
-                                if (i < arrayLength(&Dst)) {
-                                    Dst[i] = Src[i];
+                                let i = id.x; let n = dim.val;
+                                if (i < n) {
+                                    var p = posMassIn[i]; var v = velIn[i];
+                                    var force = vec3<f32>(0.0);
+                                    for (var j = 0u; j < n; j = j + 1u) {
+                                        let p2 = posMassIn[j];
+                                        let d = p2.xyz - p.xyz;
+                                        let distSq = dot(d, d) + 0.001f;
+                                        let invDist = inverseSqrt(distSq);
+                                        let invDist3 = invDist * invDist * invDist;
+                                        force = force + d * p2.w * invDist3;
+                                    }
+                                    v = vec4<f32>(v.xyz + force * 0.016f, 0.0);
+                                    p = vec4<f32>(p.xyz + v.xyz * 0.016f, p.w);
+                                    posMassOut[i] = p; velOut[i] = v;
                                 }
                             }
                         `
                     },
-                    'crypto-chacha': {
-                        name: 'ChaCha20 Quarter Round',
-                        type: 'iops',
-                        isFloat: false,
-                        epsilon: 0,
-                        workgroupSize: 256,
-                        opsPerInvocation: 16,
-                        bytesPerInvocation: 16,
-                        generateInputs: (count) => [ new Uint32Array(count).map(() => Math.floor(Math.random() * 0xFFFFFFFF)) ],
+                    'parallel-reduce': {
+                        name: 'Parallel Reduction (Shared Mem Sum)', type: 'iops', isFloat: false, epsilon: 0, workgroupSize: 256,
+                        opsPerInvocation: () => 1, bytesPerInvocation: () => 4, // 1 read per element, writes are negligible
+                        generateInputs: (count) => [ new Uint32Array(count).map(() => 1) ],
                         createBuffers: (device, inputs, count) => [
                             BufferManager.createStorage(device, inputs[0]),
-                            BufferManager.createStorage(device, count * 4)
+                            BufferManager.createStorage(device, Math.ceil(count / 256) * 4)
                         ],
+                        cpuExecute: (inputs, count) => {
+                            const In = inputs[0]; const wgs = Math.ceil(count / 256); const Out = new Uint32Array(wgs);
+                            for (let w = 0; w < wgs; w++) {
+                                let sum = 0;
+                                for (let i = 0; i < 256; i++) {
+                                    let idx = w * 256 + i;
+                                    if(idx < count) sum += In[idx];
+                                }
+                                Out[w] = sum;
+                            }
+                            return Out;
+                        },
+                        code: (size) => `
+                            @group(0) @binding(0) var<storage, read> In: array<u32>; @group(0) @binding(1) var<storage, read_write> Out: array<u32>;
+                            var<workgroup> sdata: array<u32, ${size}>;
+                            @compute @workgroup_size(${size})
+                            fn main(@builtin(global_invocation_id) gid: vec3<u32>, @builtin(local_invocation_id) lid: vec3<u32>, @builtin(workgroup_id) wid: vec3<u32>) {
+                                let tid = lid.x; let i = gid.x;
+                                sdata[tid] = 0u;
+                                if (i < arrayLength(&In)) { sdata[tid] = In[i]; }
+                                workgroupBarrier();
+                                
+                                for(var s: u32 = ${size}u / 2u; s > 0u; s >>= 1u) {
+                                    if (tid < s) { sdata[tid] += sdata[tid + s]; }
+                                    workgroupBarrier();
+                                }
+                                if (tid == 0u) { Out[wid.x] = sdata[0]; }
+                            }
+                        `
+                    },
+                    'mem-seq': {
+                        name: 'Sequential Memory Copy', type: 'bandwidth', isFloat: false, epsilon: 0, workgroupSize: 256,
+                        opsPerInvocation: () => 1, bytesPerInvocation: () => 32, // vec4 read + write
+                        generateInputs: (count) => [ new Uint32Array(count * 4).map(() => Math.floor(Math.random() * 100)) ],
+                        createBuffers: (device, inputs, count) => [BufferManager.createStorage(device, inputs[0]), BufferManager.createStorage(device, count * 16)],
+                        cpuExecute: (inputs, count) => { const A = inputs[0]; const Out = new Uint32Array(count * 4); Out.set(A); return Out; },
+                        code: (size) => `
+                            @group(0) @binding(0) var<storage, read> Src: array<vec4<u32>>; @group(0) @binding(1) var<storage, read_write> Dst: array<vec4<u32>>;
+                            @compute @workgroup_size(${size})
+                            fn main(@builtin(global_invocation_id) id: vec3<u32>) {
+                                let i = id.x;
+                                if (i < arrayLength(&Dst)) { Dst[i] = Src[i]; }
+                            }
+                        `
+                    },
+                    'crypto-chacha': {
+                        name: 'ChaCha20 Quarter Round', type: 'iops', isFloat: false, epsilon: 0, workgroupSize: 256,
+                        opsPerInvocation: () => 16, bytesPerInvocation: () => 16,
+                        generateInputs: (count) => [ new Uint32Array(count).map(() => Math.floor(Math.random() * 0xFFFFFFFF)) ],
+                        createBuffers: (device, inputs, count) => [BufferManager.createStorage(device, inputs[0]), BufferManager.createStorage(device, count * 4)],
                         cpuExecute: (inputs, count) => {
                             const In = inputs[0]; const Out = new Uint32Array(count);
                             const rotl = (val, shift) => ((val << shift) | (val >>> (32 - shift))) >>> 0;
                             for (let i = 0; i < count; i++) {
-                                let a = 0x61707865 >>> 0; let b = 0x3320646e >>> 0; 
-                                let c = 0x79622d32 >>> 0; let d = In[i] >>> 0;
-                                a = (a + b) >>> 0; d ^= a; d = rotl(d, 16);
-                                c = (c + d) >>> 0; b ^= c; b = rotl(b, 12);
-                                a = (a + b) >>> 0; d ^= a; d = rotl(d, 8);
-                                c = (c + d) >>> 0; b ^= c; b = rotl(b, 7);
+                                let a = 0x61707865 >>> 0; let b = 0x3320646e >>> 0; let c = 0x79622d32 >>> 0; let d = In[i] >>> 0;
+                                a = (a + b) >>> 0; d ^= a; d = rotl(d, 16); c = (c + d) >>> 0; b ^= c; b = rotl(b, 12);
+                                a = (a + b) >>> 0; d ^= a; d = rotl(d, 8); c = (c + d) >>> 0; b ^= c; b = rotl(b, 7);
                                 Out[i] = (a ^ b ^ c ^ d) >>> 0;
                             }
                             return Out;
                         },
                         code: (size) => `
-                            @group(0) @binding(0) var<storage, read> In: array<u32>;
-                            @group(0) @binding(1) var<storage, read_write> Out: array<u32>;
+                            @group(0) @binding(0) var<storage, read> In: array<u32>; @group(0) @binding(1) var<storage, read_write> Out: array<u32>;
                             fn rotl(a: u32, b: u32) -> u32 { return (a << b) | (a >> (32u - b)); }
                             @compute @workgroup_size(${size})
                             fn main(@builtin(global_invocation_id) id: vec3<u32>) {
                                 let i = id.x;
                                 if (i < arrayLength(&Out)) {
-                                    var a = 0x61707865u; var b = 0x3320646eu; 
-                                    var c = 0x79622d32u; var d = In[i];
-                                    a += b; d ^= a; d = rotl(d, 16u);
-                                    c += d; b ^= c; b = rotl(b, 12u);
-                                    a += b; d ^= a; d = rotl(d, 8u);
-                                    c += d; b ^= c; b = rotl(b, 7u);
+                                    var a = 0x61707865u; var b = 0x3320646eu; var c = 0x79622d32u; var d = In[i];
+                                    a += b; d ^= a; d = rotl(d, 16u); c += d; b ^= c; b = rotl(b, 12u);
+                                    a += b; d ^= a; d = rotl(d, 8u); c += d; b ^= c; b = rotl(b, 7u);
                                     Out[i] = a ^ b ^ c ^ d;
                                 }
                             }
@@ -502,12 +492,9 @@
          */
         class BenchmarkEngine {
             constructor(ui) {
-                this.ui = ui;
-                this.stats = new StatisticsEngine();
+                this.ui = ui; this.stats = new StatisticsEngine();
                 this.gpu = { adapter: null, device: null, limits: null, info: null };
-                this.isRunning = false;
-                this.shouldAbort = false;
-                this.reportData = null;
+                this.isRunning = false; this.shouldAbort = false; this.reportData = null;
             }
 
             async initialize() {
@@ -520,87 +507,63 @@
                 
                 const infoObj = this.gpu.adapter.info || (this.gpu.adapter.requestAdapterInfo ? await this.gpu.adapter.requestAdapterInfo() : {});
                 this.gpu.info = {
-                    vendor: infoObj.vendor || infoObj.description || 'Unknown Vendor',
-                    arch: infoObj.architecture || 'Unknown Arch',
+                    vendor: infoObj.vendor || infoObj.description || 'Unknown Vendor', arch: infoObj.architecture || 'Unknown Arch',
                     type: this.gpu.adapter.isFallbackAdapter ? "Software Fallback" : "Hardware Accelerated",
-                    maxBuffer: this.gpu.limits.maxStorageBufferBindingSize,
-                    maxWgSize: this.gpu.limits.maxComputeWorkgroupSizeX,
+                    maxBuffer: this.gpu.limits.maxStorageBufferBindingSize, maxWgSize: this.gpu.limits.maxComputeWorkgroupSizeX,
                     maxWgCount: this.gpu.limits.maxComputeWorkgroupsPerDimension
                 };
-                
                 this.ui.setHardwareInfo(this.gpu.info);
             }
 
             async execute(kernelId, profileStr) {
                 if (this.isRunning) return;
-                this.isRunning = true;
-                this.shouldAbort = false;
-                this.stats.reset();
-                this.ui.setRunning(true);
-                this.ui.hideReport();
+                this.isRunning = true; this.shouldAbort = false;
+                this.stats.reset(); this.ui.setRunning(true); this.ui.hideReport();
 
-                let device = this.gpu.device;
-                let buffers = [];
-                let readBuffer = null;
-                let pipeline = null;
+                let device = this.gpu.device; let buffers = []; let readBuffer = null; let pipeline = null;
 
                 try {
                     const kernel = KernelRegistry.getKernel(kernelId);
-                    const isMatMul = kernelId === 'matmul';
+                    const isO2 = (kernelId === 'matmul' || kernelId === 'n-body');
                     const isVec4 = kernelId === 'mem-seq';
 
                     // === PHASE 1: COMPILATION ===
                     this.ui.updatePhase('COMPILING_SHADER');
                     const t0 = performance.now();
                     const shaderModule = device.createShaderModule({ label: kernel.name, code: kernel.code(kernel.workgroupSize) });
-                    const tCompile = performance.now() - t0;
-                    this.ui.els.tkCompile.textContent = tCompile.toFixed(2) + ' ms';
-
-                    const t1 = performance.now();
-                    pipeline = await device.createComputePipelineAsync({
-                        layout: 'auto',
-                        compute: { module: shaderModule, entryPoint: 'main' }
-                    });
-                    const tBuild = performance.now() - t1;
-                    this.ui.els.tkBuild.textContent = tBuild.toFixed(2) + ' ms';
+                    const pipeline = await device.createComputePipelineAsync({ layout: 'auto', compute: { module: shaderModule, entryPoint: 'main' } });
+                    this.ui.els.tkCompile.textContent = (performance.now() - t0).toFixed(2) + ' ms';
 
                     // === PHASE 2: STRICT CORRECTNESS VALIDATION & CPU BASELINE ===
                     this.ui.updatePhase('CPU_GPU_VALIDATION');
-                    
-                    // Use a small fixed size for validation so CPU doesn't freeze
-                    const valSize = isMatMul ? 256 : (isVec4 ? 65536 : 262144);
+                    const valSize = isO2 ? 256 : (isVec4 ? 32768 : 131072);
+                    this.ui.els.tkSize.textContent = valSize.toLocaleString() + ' Elements';
                     const valInputs = kernel.generateInputs(valSize);
                     
-                    // CPU Execution
-                    await new Promise(r => setTimeout(r, 10)); // Yield to paint UI
+                    await new Promise(r => setTimeout(r, 10)); // Yield UI
                     const cpuStart = performance.now();
                     const cpuOut = kernel.cpuExecute(valInputs, valSize);
                     const cpuTime = performance.now() - cpuStart;
 
-                    // GPU Execution (Validation)
                     buffers = kernel.createBuffers(device, valInputs, valSize);
                     let bindGroupEntries = buffers.map((b, i) => ({ binding: i, resource: { buffer: b.buffer } }));
                     
-                    // Matmul needs uniform dimension binding
                     let uniformBuffer = null;
-                    if (isMatMul) {
+                    if (isO2) {
                         uniformBuffer = device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
                         device.queue.writeBuffer(uniformBuffer, 0, new Uint32Array([valSize]));
-                        bindGroupEntries.push({ binding: 3, resource: { buffer: uniformBuffer } });
+                        bindGroupEntries.push({ binding: kernelId === 'matmul' ? 3 : 4, resource: { buffer: uniformBuffer } });
                     }
 
                     const bindGroup = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: bindGroupEntries });
-                    
-                    const outBuffer = buffers[buffers.length - 1];
+                    const outBuffer = kernelId === 'n-body' ? buffers[2] : buffers[buffers.length - 1]; // Validate positions for n-body
                     readBuffer = BufferManager.createRead(device, outBuffer.size);
 
                     const commandEncoder = device.createCommandEncoder();
                     const passEncoder = commandEncoder.beginComputePass();
-                    passEncoder.setPipeline(pipeline);
-                    passEncoder.setBindGroup(0, bindGroup);
-                    
-                    let vWgX = isMatMul ? Math.ceil(valSize / kernel.workgroupSize) : Math.ceil(valSize / kernel.workgroupSize);
-                    let vWgY = isMatMul ? Math.ceil(valSize / kernel.workgroupSize) : 1;
+                    passEncoder.setPipeline(pipeline); passEncoder.setBindGroup(0, bindGroup);
+                    let vWgX = kernelId === 'matmul' ? Math.ceil(valSize / kernel.workgroupSize) : Math.ceil(valSize / kernel.workgroupSize);
+                    let vWgY = kernelId === 'matmul' ? Math.ceil(valSize / kernel.workgroupSize) : 1;
                     passEncoder.dispatchWorkgroups(vWgX, vWgY);
                     passEncoder.end();
                     commandEncoder.copyBufferToBuffer(outBuffer.buffer, 0, readBuffer, 0, outBuffer.size);
@@ -608,21 +571,17 @@
                     
                     await device.queue.onSubmittedWorkDone();
                     await readBuffer.mapAsync(GPUMapMode.READ);
-                    const gpuOut = kernel.isFloat 
-                        ? new Float32Array(readBuffer.getMappedRange().slice(0)) 
-                        : new Uint32Array(readBuffer.getMappedRange().slice(0));
+                    const gpuOut = kernel.isFloat ? new Float32Array(readBuffer.getMappedRange().slice(0)) : new Uint32Array(readBuffer.getMappedRange().slice(0));
                     readBuffer.unmap();
 
                     // Compare Outputs
                     let errs = 0, maxErr = 0;
-                    const checkLen = isMatMul ? valSize*valSize : (isVec4 ? valSize*4 : valSize);
+                    const checkLen = (kernelId === 'matmul' || kernelId === 'n-body') ? valSize* (kernelId==='n-body'?4:valSize) : (isVec4 ? valSize*4 : (kernelId==='parallel-reduce' ? Math.ceil(valSize/256) : valSize));
                     
                     for (let i = 0; i < checkLen; i++) {
                         const diff = Math.abs(gpuOut[i] - cpuOut[i]);
                         if (kernel.isFloat) {
-                            if (diff > kernel.epsilon && (diff / (Math.abs(cpuOut[i]) || 1)) > kernel.epsilon) {
-                                errs++; if(diff > maxErr) maxErr = diff;
-                            }
+                            if (diff > kernel.epsilon && (diff / (Math.abs(cpuOut[i]) || 1)) > kernel.epsilon) { errs++; if(diff > maxErr) maxErr = diff; }
                         } else {
                             if (diff !== 0) { errs++; if(diff > maxErr) maxErr = diff; }
                         }
@@ -635,67 +594,114 @@
                     }
                     this.ui.showValStatus(true, checkLen, errs, maxErr, errPct);
 
-                    // Calculate CPU Baseline throughput (Extrapolated)
-                    let vOps = isMatMul ? (valSize * valSize * kernel.opsPerInvocation(valSize)) : valSize * kernel.opsPerInvocation;
-                    let vBytes = isMatMul ? (valSize * valSize * kernel.bytesPerInvocation(valSize)) : valSize * kernel.bytesPerInvocation;
+                    let vOps = isO2 ? (valSize * kernel.opsPerInvocation(valSize)) : valSize * kernel.opsPerInvocation();
+                    if(kernelId === 'matmul') vOps = valSize * valSize * kernel.opsPerInvocation(valSize);
+                    let vBytes = isO2 ? (valSize * kernel.bytesPerInvocation(valSize)) : valSize * kernel.bytesPerInvocation();
+                    if(kernelId === 'matmul') vBytes = valSize * valSize * kernel.bytesPerInvocation(valSize);
+
                     const cpuThroughput = kernel.type === 'bandwidth' ? (vBytes / (cpuTime/1000) / 1e9) : (vOps / (cpuTime/1000) / 1e9);
                     this.ui.els.statCpuPerf.innerHTML = `${cpuThroughput.toFixed(2)} <span class="text-xs">${kernel.type==='bandwidth'?'GB/s':(kernel.type==='flops'?'GFLOPS':'GOPS')}</span>`;
 
-                    // Clean up validation buffers
                     buffers.forEach(b => b.buffer.destroy());
                     if(uniformBuffer) uniformBuffer.destroy();
                     readBuffer.destroy();
 
-                    // === PHASE 3: SCALING TO OPTIMAL SIZE ===
-                    this.ui.updatePhase('SCALING_OPTIMIZATION');
+                    // === PHASE 3: ADAPTIVE SCALING SWEEP ===
+                    this.ui.updatePhase('ADAPTIVE_SCALE_SWEEP');
+                    let optSize = valSize;
+                    let bestThroughput = 0;
                     
-                    // Determine Max Size based on Buffer Limits
-                    let maxElements = isMatMul ? 2048 : 8_388_608; // 2048 matrix or 8M array
-                    // Check against maxStorageBufferBindingSize
+                    const scaleSteps = isO2 ? [64, 128, 256, 512, 1024, 2048] : [1024, 4096, 16384, 65536, 262144, 1048576, 4194304, 16777216];
                     const maxBytes = this.gpu.limits.maxStorageBufferBindingSize;
-                    if (isMatMul) {
-                        while ((maxElements * maxElements * 4) > maxBytes && maxElements > 256) maxElements -= 256;
-                    } else {
-                        const maxAllowed = Math.floor(maxBytes / 16); // max size div by largest bytes/invocation
-                        if (maxElements > maxAllowed) maxElements = maxAllowed;
+
+                    for (let size of scaleSteps) {
+                        if (this.shouldAbort) break;
+                        
+                        let bytesRequired = isO2 ? size * kernel.bytesPerInvocation(size) : size * kernel.bytesPerInvocation();
+                        if(kernelId === 'matmul') bytesRequired = size * size * 4; // Check buffer allocation bounds
+                        if (bytesRequired > maxBytes * 0.8) break; // Don't exceed 80% of max buffer in sweep
+
+                        this.ui.els.tkSize.textContent = size.toLocaleString() + ' Elements';
+                        const sInputs = kernel.generateInputs(size);
+                        const sBuffers = kernel.createBuffers(device, sInputs, size);
+                        let sBindEntries = sBuffers.map((b, i) => ({ binding: i, resource: { buffer: b.buffer } }));
+                        
+                        let sUni = null;
+                        if (isO2) {
+                            sUni = device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+                            device.queue.writeBuffer(sUni, 0, new Uint32Array([size]));
+                            sBindEntries.push({ binding: kernelId === 'matmul' ? 3 : 4, resource: { buffer: sUni } });
+                        }
+
+                        const sBG = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: sBindEntries });
+                        let sWgX = kernelId === 'matmul' ? Math.ceil(size / kernel.workgroupSize) : Math.ceil((isVec4 ? size/4 : size) / kernel.workgroupSize);
+                        let sWgY = kernelId === 'matmul' ? Math.ceil(size / kernel.workgroupSize) : 1;
+                        
+                        let sweepOps = isO2 ? (size * kernel.opsPerInvocation(size)) : size * kernel.opsPerInvocation();
+                        if(kernelId === 'matmul') sweepOps = size * size * kernel.opsPerInvocation(size);
+                        let sweepBytes = isO2 ? (size * kernel.bytesPerInvocation(size)) : size * kernel.bytesPerInvocation();
+                        if(kernelId === 'matmul') sweepBytes = size * size * kernel.bytesPerInvocation(size);
+
+                        let sweepTime = 0;
+                        for(let i=0; i<3; i++) { // 3 iterations per scale
+                            const ce = device.createCommandEncoder();
+                            const pe = ce.beginComputePass();
+                            pe.setPipeline(pipeline); pe.setBindGroup(0, sBG);
+                            pe.dispatchWorkgroups(sWgX, sWgY); pe.end();
+                            device.queue.submit([ce.finish()]);
+                            
+                            const tStart = performance.now();
+                            await device.queue.onSubmittedWorkDone();
+                            sweepTime += (performance.now() - tStart);
+                        }
+                        
+                        const avgTime = sweepTime / 3;
+                        const tp = kernel.type === 'bandwidth' ? (sweepBytes / (avgTime/1000) / 1e9) : (sweepOps / (avgTime/1000) / 1e9);
+                        
+                        if (tp > bestThroughput * 1.02) { // 2% improvement threshold to scale up
+                            bestThroughput = tp;
+                            optSize = size;
+                            this.ui.els.tkSaturation.textContent = "Scaling... " + tp.toFixed(1);
+                        }
+                        
+                        sBuffers.forEach(b => b.buffer.destroy());
+                        if(sUni) sUni.destroy();
                     }
 
-                    const optSize = maxElements;
-                    const optInputs = kernel.generateInputs(optSize);
+                    if (profileStr === 'scale-only') {
+                        this.ui.updatePhase('COMPLETE');
+                        this.ui.els.tkSize.textContent = "Optimal: " + optSize.toLocaleString();
+                        this.ui.els.tkSaturation.textContent = "Peak: " + bestThroughput.toFixed(2);
+                        return;
+                    }
 
-                    // Reallocate for optimal size
+                    // === PHASE 4: EXECUTION & MEASUREMENT ===
+                    this.ui.els.tkSize.textContent = optSize.toLocaleString() + ' Elements (Optimal)';
+                    const optInputs = kernel.generateInputs(optSize);
                     buffers = kernel.createBuffers(device, optInputs, optSize);
                     bindGroupEntries = buffers.map((b, i) => ({ binding: i, resource: { buffer: b.buffer } }));
                     
-                    if (isMatMul) {
+                    if (isO2) {
                         uniformBuffer = device.createBuffer({ size: 4, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
                         device.queue.writeBuffer(uniformBuffer, 0, new Uint32Array([optSize]));
-                        bindGroupEntries.push({ binding: 3, resource: { buffer: uniformBuffer } });
+                        bindGroupEntries.push({ binding: kernelId === 'matmul' ? 3 : 4, resource: { buffer: uniformBuffer } });
                     }
 
                     const optBindGroup = device.createBindGroup({ layout: pipeline.getBindGroupLayout(0), entries: bindGroupEntries });
 
-                    let workgroupsX = 1, workgroupsY = 1;
-                    let invocationsPerRun = 0;
-                    if (isMatMul) {
-                        workgroupsX = Math.ceil(optSize / kernel.workgroupSize);
-                        workgroupsY = Math.ceil(optSize / kernel.workgroupSize);
-                        invocationsPerRun = optSize * optSize;
-                    } else {
-                        invocationsPerRun = isVec4 ? optSize / 4 : optSize;
-                        workgroupsX = Math.ceil(invocationsPerRun / kernel.workgroupSize);
-                    }
-
-                    let opsPerRun = isMatMul ? invocationsPerRun * kernel.opsPerInvocation(optSize) : invocationsPerRun * kernel.opsPerInvocation;
-                    let bytesPerRun = isMatMul ? invocationsPerRun * kernel.bytesPerInvocation(optSize) : invocationsPerRun * kernel.bytesPerInvocation;
+                    let workgroupsX = kernelId === 'matmul' ? Math.ceil(optSize / kernel.workgroupSize) : Math.ceil((isVec4 ? optSize/4 : optSize) / kernel.workgroupSize);
+                    let workgroupsY = kernelId === 'matmul' ? Math.ceil(optSize / kernel.workgroupSize) : 1;
+                    let invocationsPerRun = kernelId === 'matmul' ? optSize*optSize : (isVec4 ? optSize/4 : optSize);
+                    
+                    let opsPerRun = isO2 ? (optSize * kernel.opsPerInvocation(optSize)) : optSize * kernel.opsPerInvocation();
+                    if(kernelId === 'matmul') opsPerRun = optSize * optSize * kernel.opsPerInvocation(optSize);
+                    let bytesPerRun = isO2 ? (optSize * kernel.bytesPerInvocation(optSize)) : optSize * kernel.bytesPerInvocation();
+                    if(kernelId === 'matmul') bytesPerRun = optSize * optSize * kernel.bytesPerInvocation(optSize);
+                    
                     const totalWorkgroups = workgroupsX * workgroupsY;
 
-                    // === PHASE 4: EXECUTION & MEASUREMENT ===
                     let durationLimit = profileStr === 'time-10s' ? 10000 : (profileStr === 'time-30s' ? 30000 : 60000);
-                    let warmupReq = 20;
-                    let warmupCount = 0;
-                    let measureCount = 0;
-                    let totalGlobalThreads = 0;
+                    let warmupReq = 20; let warmupCount = 0; let measureCount = 0; let totalGlobalThreads = 0;
                     
                     this.ui.updatePhase('WARMUP_ROUTINE');
                     const measureStartTime = performance.now();
@@ -710,10 +716,8 @@
                         const tCpuStart = performance.now();
                         const commandEncoder = device.createCommandEncoder();
                         const passEncoder = commandEncoder.beginComputePass();
-                        passEncoder.setPipeline(pipeline);
-                        passEncoder.setBindGroup(0, optBindGroup);
-                        if (isMatMul) passEncoder.dispatchWorkgroups(workgroupsX, workgroupsY);
-                        else passEncoder.dispatchWorkgroups(workgroupsX);
+                        passEncoder.setPipeline(pipeline); passEncoder.setBindGroup(0, optBindGroup);
+                        passEncoder.dispatchWorkgroups(workgroupsX, workgroupsY);
                         passEncoder.end();
                         device.queue.submit([commandEncoder.finish()]);
                         const cpuOverhead = performance.now() - tCpuStart;
@@ -724,12 +728,9 @@
 
                         this.stats.record(isWarmup, gpuLatency, cpuOverhead);
 
-                        if (isWarmup) {
-                            warmupCount++;
-                        } else {
-                            measureCount++;
-                            totalGlobalThreads += invocationsPerRun;
-                            
+                        if (isWarmup) { warmupCount++; } 
+                        else {
+                            measureCount++; totalGlobalThreads += invocationsPerRun;
                             const throughput = kernel.type === 'bandwidth' ? (bytesPerRun / (gpuLatency/1000) / 1e9) : (opsPerRun / (gpuLatency/1000) / 1e9);
                             this.ui.updateLive(throughput, kernel.type, cpuThroughput, gpuLatency, cpuOverhead, totalGlobalThreads, warmupCount, measureCount);
                         }
@@ -742,8 +743,9 @@
                     if (analysis) {
                         const avgThroughput = kernel.type === 'bandwidth' ? (bytesPerRun / (analysis.avg/1000) / 1e9) : (opsPerRun / (analysis.avg/1000) / 1e9);
                         const arithmeticIntensity = (opsPerRun / bytesPerRun).toFixed(3);
-                        const occupancy = (totalWorkgroups * kernel.workgroupSize) / this.gpu.info.maxWgSize; // Estimate
+                        const occupancy = (totalWorkgroups * kernel.workgroupSize) / this.gpu.info.maxWgSize;
                         const speedup = avgThroughput / cpuThroughput;
+                        this.ui.els.tkSaturation.textContent = (occupancy * 100).toFixed(1) + "%";
 
                         this.reportData = {
                             device: this.gpu.info,
@@ -764,32 +766,23 @@
                     this.ui.updatePhase('COMPLETE');
 
                 } catch (e) {
-                    console.error(e);
-                    this.ui.showError(e.message || "Execution Fault.");
-                    this.ui.updatePhase('FAULT');
+                    console.error(e); this.ui.showError(e.message || "Execution Fault."); this.ui.updatePhase('FAULT');
                 } finally {
                     buffers.forEach(b => b.buffer.destroy());
-                    this.isRunning = false;
-                    this.ui.setRunning(false);
+                    if(uniformBuffer) uniformBuffer.destroy();
+                    this.isRunning = false; this.ui.setRunning(false);
                 }
             }
-
             abort() { this.shouldAbort = true; }
-            
             exportJSON() {
                 if(!this.reportData) return;
-                const blob = new Blob([JSON.stringify(this.reportData, null, 2)], { type: "application/json" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = `WebGPU_ProBench_${Date.now()}.json`; a.click();
+                const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(this.reportData, null, 2)], { type: "application/json" })); a.download = `WebGPU_ProBench_${Date.now()}.json`; a.click();
             }
-
             exportCSV() {
                 if(!this.reportData) return;
                 const r = this.reportData;
                 const csv = `Metric,Value\nVendor,${r.device.vendor}\nArchitecture,${r.device.arch}\nKernel,${r.config.kernel}\nOptimal Size,${r.config.optimalSize}\nValidation Errors,${r.validation.errs}\nGPU Average Ms,${r.results.avgMs}\nGPU Median Ms,${r.results.medianMs}\nGPU 95% CI,±${r.results.ci95}\nGPU Min Ms,${r.results.minMs}\nGPU Max Ms,${r.results.maxMs}\nGPU Throughput,${r.results.avgThroughput} ${r.results.unit}\nCPU Throughput,${r.results.cpuThroughput} ${r.results.unit}\nHardware Speedup,${r.results.speedup}x\nArithmetic Intensity,${r.results.arithmeticIntensity}`;
-                const blob = new Blob([csv], { type: "text/csv" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a'); a.href = url; a.download = `WebGPU_ProBench_${Date.now()}.csv`; a.click();
+                const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); a.download = `WebGPU_ProBench_${Date.now()}.csv`; a.click();
             }
         }
 
@@ -800,57 +793,35 @@
             constructor() {
                 this.els = {
                     btnStart: document.getElementById('btn-start'), btnStop: document.getElementById('btn-stop'),
-                    sysVendor: document.getElementById('sys-vendor'), sysArch: document.getElementById('sys-arch'),
-                    sysType: document.getElementById('sys-type'), sysBuf: document.getElementById('sys-buffer'),
-                    sysWg: document.getElementById('sys-wg'), sysThreads: document.getElementById('sys-threads'),
-                    statPerf: document.getElementById('stat-perf'), statPerfUnit: document.getElementById('stat-perf-unit'),
-                    statCpuPerf: document.getElementById('stat-cpu-perf'), statSpeedup: document.getElementById('stat-speedup'),
-                    statVal: document.getElementById('stat-val'), statPhase: document.getElementById('stat-phase'),
-                    tkCompile: document.getElementById('tk-compile'), tkBuild: document.getElementById('tk-build'),
-                    tkCpu: document.getElementById('tk-cpu'), tkGpu: document.getElementById('tk-gpu'),
-                    tkSamples: document.getElementById('tk-samples'), err: document.getElementById('error-console'),
-                    repCont: document.getElementById('report-container')
+                    sysVendor: document.getElementById('sys-vendor'), sysArch: document.getElementById('sys-arch'), sysType: document.getElementById('sys-type'), sysBuf: document.getElementById('sys-buffer'), sysWg: document.getElementById('sys-wg'), sysThreads: document.getElementById('sys-threads'),
+                    statPerf: document.getElementById('stat-perf'), statPerfUnit: document.getElementById('stat-perf-unit'), statCpuPerf: document.getElementById('stat-cpu-perf'), statSpeedup: document.getElementById('stat-speedup'), statVal: document.getElementById('stat-val'), statPhase: document.getElementById('stat-phase'),
+                    tkCompile: document.getElementById('tk-compile'), tkBuild: document.getElementById('tk-build'), tkCpu: document.getElementById('tk-cpu'), tkGpu: document.getElementById('tk-gpu'), tkSamples: document.getElementById('tk-samples'), tkSize: document.getElementById('tk-size'), tkSaturation: document.getElementById('tk-saturation'),
+                    err: document.getElementById('error-console'), repCont: document.getElementById('report-container')
                 };
             }
-
             setHardwareInfo(info) {
-                this.els.sysVendor.textContent = info.vendor; this.els.sysArch.textContent = info.arch;
-                this.els.sysType.textContent = info.type; this.els.sysBuf.textContent = (info.maxBuffer / 1024 / 1024).toFixed(0) + ' MB';
-                this.els.sysWg.textContent = info.maxWgCount; this.els.sysThreads.textContent = info.maxWgSize;
-                
-                const st = document.getElementById('global-status');
-                st.textContent = "HW_VERIFIED";
-                st.className = "px-3 py-1 rounded text-xs font-bold font-mono bg-green-900/50 text-green-400 border border-green-800";
+                this.els.sysVendor.textContent = info.vendor; this.els.sysArch.textContent = info.arch; this.els.sysType.textContent = info.type;
+                this.els.sysBuf.textContent = (info.maxBuffer / 1024 / 1024).toFixed(0) + ' MB'; this.els.sysWg.textContent = info.maxWgCount; this.els.sysThreads.textContent = info.maxWgSize;
+                const st = document.getElementById('global-status'); st.textContent = "HW_VERIFIED"; st.className = "px-3 py-1 rounded text-xs font-bold font-mono bg-green-900/50 text-green-400 border border-green-800";
             }
-
             setRunning(isRunning) {
-                this.els.btnStart.classList.toggle('hidden', isRunning);
-                this.els.btnStop.classList.toggle('hidden', !isRunning);
-                document.getElementById('ctrl-kernel').disabled = isRunning;
-                document.getElementById('ctrl-mode').disabled = isRunning;
+                this.els.btnStart.classList.toggle('hidden', isRunning); this.els.btnStop.classList.toggle('hidden', !isRunning);
+                document.getElementById('ctrl-kernel').disabled = isRunning; document.getElementById('ctrl-mode').disabled = isRunning;
                 if(!isRunning && this.els.statPhase.textContent !== 'FAULT') this.updatePhase('IDLE');
             }
-
             updatePhase(phase) { this.els.statPhase.textContent = phase; }
-
             showValStatus(pass, count, errs, max, pct) {
                 this.els.statVal.textContent = pass ? 'PASS (100%)' : `FAIL (${errs} errs)`;
                 this.els.statVal.className = pass ? 'text-xl font-mono font-bold text-green-400' : 'text-xl font-mono font-bold text-red-500';
             }
-
             updateLive(throughput, type, cpuThroughput, gpuLatency, cpuLatency, threads, warm, meas) {
                 const unit = type === 'bandwidth' ? 'GB/s' : (type === 'flops' ? 'GFLOPS' : 'GOPS');
                 this.els.statPerf.innerHTML = `${throughput.toFixed(2)} <span class="text-xs text-gray-400">${unit}</span>`;
                 this.els.statSpeedup.textContent = (throughput / cpuThroughput).toFixed(1) + 'x';
-                
-                this.els.tkGpu.textContent = gpuLatency.toFixed(3) + ' ms';
-                this.els.tkCpu.textContent = cpuLatency.toFixed(3) + ' ms';
-                this.els.tkSamples.textContent = `${warm} / ${meas}`;
+                this.els.tkGpu.textContent = gpuLatency.toFixed(3) + ' ms'; this.els.tkCpu.textContent = cpuLatency.toFixed(3) + ' ms'; this.els.tkSamples.textContent = `${warm} / ${meas}`;
             }
-
             showReport(data, totalThreads) {
                 this.els.repCont.classList.remove('hidden'); this.els.repCont.classList.add('flex');
-                
                 document.getElementById('rep-val-match').textContent = data.validation.errs === 0 ? 'TRUE (100%)' : 'FALSE';
                 document.getElementById('rep-val-match').className = data.validation.errs === 0 ? 'text-right font-bold text-green-400' : 'text-right font-bold text-red-400';
                 document.getElementById('rep-val-elements').textContent = this.fmt(data.config.optimalSize);
@@ -858,62 +829,39 @@
                 document.getElementById('rep-val-maxerr').textContent = data.validation.maxErr.toFixed(5);
                 document.getElementById('rep-val-pct').textContent = data.validation.errPct.toFixed(4) + '%';
                 
-                document.getElementById('rep-avg').textContent = data.results.avgMs.toFixed(4) + ' ms';
-                document.getElementById('rep-median').textContent = data.results.medianMs.toFixed(4) + ' ms';
+                document.getElementById('rep-avg').textContent = data.results.avgMs.toFixed(4) + ' ms'; document.getElementById('rep-median').textContent = data.results.medianMs.toFixed(4) + ' ms';
                 document.getElementById('rep-minmax').textContent = `${data.results.minMs.toFixed(3)} / ${data.results.maxMs.toFixed(3)} ms`;
-                document.getElementById('rep-stddev').textContent = '± ' + data.results.stdDevMs.toFixed(4) + ' ms';
-                document.getElementById('rep-var').textContent = data.results.variance.toFixed(4);
-                document.getElementById('rep-ci').textContent = '± ' + data.results.ci95.toFixed(4) + ' ms';
-                document.getElementById('rep-outliers').textContent = data.results.outliersRejected + ' Samples';
+                document.getElementById('rep-stddev').textContent = '± ' + data.results.stdDevMs.toFixed(4) + ' ms'; document.getElementById('rep-var').textContent = data.results.variance.toFixed(4);
+                document.getElementById('rep-ci').textContent = '± ' + data.results.ci95.toFixed(4) + ' ms'; document.getElementById('rep-outliers').textContent = data.results.outliersRejected + ' Samples';
                 
-                document.getElementById('rep-opt-size').textContent = this.fmt(data.config.optimalSize);
-                document.getElementById('rep-ops').textContent = this.fmt(data.config.opsPerRun);
-                document.getElementById('rep-bytes').textContent = this.fmt(data.config.bytesPerRun);
-                document.getElementById('rep-intensity').textContent = data.results.arithmeticIntensity;
-                document.getElementById('rep-occupancy').textContent = data.results.occupancy;
-                document.getElementById('rep-speedup').textContent = data.results.speedup.toFixed(2) + 'x';
+                document.getElementById('rep-opt-size').textContent = this.fmt(data.config.optimalSize); document.getElementById('rep-ops').textContent = this.fmt(data.config.opsPerRun);
+                document.getElementById('rep-bytes').textContent = this.fmt(data.config.bytesPerRun); document.getElementById('rep-intensity').textContent = data.results.arithmeticIntensity;
+                document.getElementById('rep-occupancy').textContent = data.results.occupancy; document.getElementById('rep-speedup').textContent = data.results.speedup.toFixed(2) + 'x';
             }
-
             hideReport() {
-                this.els.repCont.classList.add('hidden'); this.els.repCont.classList.remove('flex');
-                this.els.err.classList.add('hidden');
-                this.els.statVal.textContent = 'PENDING';
-                this.els.statVal.className = 'text-xl font-mono font-bold text-gray-500';
-                this.els.statPerf.innerHTML = `0.00 <span class="text-xs text-gray-400">GOPS</span>`;
-                this.els.statCpuPerf.innerHTML = `0.00 <span class="text-xs text-gray-400">GOPS</span>`;
-                this.els.statSpeedup.textContent = `0.0x`;
+                this.els.repCont.classList.add('hidden'); this.els.repCont.classList.remove('flex'); this.els.err.classList.add('hidden');
+                this.els.statVal.textContent = 'PENDING'; this.els.statVal.className = 'text-xl font-mono font-bold text-gray-500';
+                this.els.statPerf.innerHTML = `0.00 <span class="text-xs text-gray-400">GOPS</span>`; this.els.statCpuPerf.innerHTML = `0.00 <span class="text-xs text-gray-400">GOPS</span>`;
+                this.els.statSpeedup.textContent = `0.0x`; this.els.tkSize.textContent = `0 Elements`; this.els.tkSaturation.textContent = `0.0%`;
             }
-
             showError(msg) { this.els.err.textContent = msg; this.els.err.classList.remove('hidden'); }
             fmt(num) {
-                if(num >= 1e12) return (num / 1e12).toFixed(2) + ' T';
-                if(num >= 1e9) return (num / 1e9).toFixed(2) + ' G';
-                if(num >= 1e6) return (num / 1e6).toFixed(2) + ' M';
-                if(num >= 1e3) return (num / 1e3).toFixed(2) + ' K';
-                return num.toString();
+                if(num >= 1e12) return (num / 1e12).toFixed(2) + ' T'; if(num >= 1e9) return (num / 1e9).toFixed(2) + ' G';
+                if(num >= 1e6) return (num / 1e6).toFixed(2) + ' M'; if(num >= 1e3) return (num / 1e3).toFixed(2) + ' K'; return num.toString();
             }
         }
 
-        // INIT
         document.addEventListener('DOMContentLoaded', async () => {
-            const ui = new UIManager();
-            const engine = new BenchmarkEngine(ui);
-
+            const ui = new UIManager(); const engine = new BenchmarkEngine(ui);
             try {
                 await engine.initialize();
-                document.getElementById('btn-start').addEventListener('click', () => {
-                    const k = document.getElementById('ctrl-kernel').value;
-                    const m = document.getElementById('ctrl-mode').value;
-                    engine.execute(k, m);
-                });
+                document.getElementById('btn-start').addEventListener('click', () => engine.execute(document.getElementById('ctrl-kernel').value, document.getElementById('ctrl-mode').value));
                 document.getElementById('btn-stop').addEventListener('click', () => engine.abort());
                 document.getElementById('btn-dl-json').addEventListener('click', () => engine.exportJSON());
                 document.getElementById('btn-dl-csv').addEventListener('click', () => engine.exportCSV());
             } catch (err) {
-                ui.showError(err.message);
-                const stat = document.getElementById('global-status');
-                stat.textContent = "HW_FAIL";
-                stat.className = "px-3 py-1 rounded text-xs font-bold font-mono bg-red-900/50 text-red-400 border border-red-800";
+                ui.showError(err.message); document.getElementById('global-status').textContent = "HW_FAIL";
+                document.getElementById('global-status').className = "px-3 py-1 rounded text-xs font-bold font-mono bg-red-900/50 text-red-400 border border-red-800";
             }
         });
     </script>
